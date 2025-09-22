@@ -4,6 +4,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "5.81.0"
     }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "4.0.6"
+    }
   }
 }
 provider "aws" {
@@ -60,4 +64,21 @@ resource "aws_vpc_security_group_egress_rule" "ssh_egress" {
   cidr_ipv4       = "0.0.0.0/0"
   from_port         = 0
   to_port           = 0
+}
+
+# SSH key
+resource "tls_private_key" "ssh" {
+  algorithm = "RSA"
+  rsa_bits = 4096
+}
+
+resource "aws_key_pair" "shh-jellyfin" {
+  key_name   = "jellyfin-key"
+  public_key = tls_private_key.ssh.public_key_openssh
+}
+
+resource "local_file" "private_key_pem" {
+  content = tls_private_key.ssh.private_key_pem
+  filename = "${path.module}/jellyfin-key.pem"
+  file_permission = "0600"
 }
